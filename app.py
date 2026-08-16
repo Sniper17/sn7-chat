@@ -12,16 +12,59 @@ def call_api(path, params=None):
     return r.text, r.status_code
 
 def handle_message(msg):
-    low = msg.strip().lower()
+    raw = msg.strip()
+    low = raw.lower()
+    parts = raw.split()
+
     if low == "!rank":
         return call_api("kick/ranking")
+
     if low in ("!wake", "/wake"):
         return call_api("wake")
+
     if low in ("!health", "/health"):
         return call_api("health")
 
+    # Kick / Placos
+    if low == "!placos" or low == "!pontos":
+        return call_api("kick/pontos", {"usuario": "SN7Fps"})
+
+    # Bank robbery: start and result
+    if low.startswith("!c4banco"):
+        valor = parts[1] if len(parts) > 1 else "1000"
+        return call_api("kick/c4banco", {"usuario": "SN7Fps", "valor": valor})
+
+    if low in ("!bancores", "!resultado"):
+        return call_api("kick/resultado")
+
+    # Police and bandit: pistol is the default when no kit is supplied.
+    if low.startswith("!policia"):
+        equipamento = parts[1] if len(parts) > 1 else "pistola"
+        return call_api("kick/policia", {
+            "usuario": "SN7Fps",
+            "equipamento": equipamento
+        })
+
+    if low.startswith("!bandido"):
+        equipamento = parts[1] if len(parts) > 1 else "pistola"
+        return call_api("kick/bandido", {
+            "usuario": "SN7Fps",
+            "equipamento": equipamento
+        })
+
+    # Fight: !briga @usuario (or just username)
+    if low.startswith("!briga"):
+        if len(parts) < 2:
+            return ("⚠️ Use: !briga @jogador", 200)
+        jogador2 = parts[1].lstrip("@")
+        return call_api("kick/briga", {
+            "jogador1": "SN7Fps",
+            "jogador2": jogador2
+        })
+
+    # Warzone / RedSec
     if low.startswith("!bf "):
-        arma = msg.split(maxsplit=1)[1].strip()
+        arma = raw.split(maxsplit=1)[1].strip()
         r = requests.get(
             CENTRAL_API.rstrip("/") + "/redsec/classe",
             params={"arma": arma},
@@ -29,10 +72,8 @@ def handle_message(msg):
         )
         return r.text, r.status_code
 
-    # StreamElements treats !classe and !meta as secondary names for the
-    # same command, so both intentionally use the same Warzone route.
     if low.startswith("!classe ") or low.startswith("!meta "):
-        tipo = msg.split(maxsplit=1)[1].strip()
+        tipo = raw.split(maxsplit=1)[1].strip()
         r = requests.get(
             CENTRAL_API.rstrip("/") + "/warzone/meta",
             params={"tipo": tipo},
@@ -40,8 +81,11 @@ def handle_message(msg):
         )
         return r.text, r.status_code
 
-    return ("🤖 Comandos: !rank, !bf <arma>, !classe <tipo>, !meta <tipo>, "
-            "!wake e !health.", 200)
+    return (
+        "🤖 Comandos: !rank, !placos, !bandido, !policia, !c4banco, "
+        "!bancores, !briga, !bf, !classe, !meta, !wake e !health.",
+        200
+    )
 
 @app.get("/")
 def home():
