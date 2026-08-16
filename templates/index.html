@@ -21,16 +21,89 @@ button:disabled{opacity:.5}
   .composer{padding-left:10px;padding-right:10px}
   input{height:48px;font-size:16px}
 }
+
+body.keyboard-open .app{
+  height:var(--chat-height, 100dvh);
+}
+body.keyboard-open .composer{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:var(--keyboard-bottom, 0px);
+  width:100%;
+}
+body.keyboard-open #messages{
+  padding-bottom:28px;
+}
 </style></head><body>
 <div class="app"><header>🤖 SN7 Bot<small>Chat particular • Warzone • BF/RedSec • Kick</small></header>
 <main id="messages"></main><form class="composer" id="form">
 <input id="input" autocomplete="off" placeholder="Digite uma pergunta ou comando...">
 <button id="send">➤</button></form></div>
 <script>
-const box=document.getElementById("messages"),form=document.getElementById("form"),input=document.getElementById("input"),send=document.getElementById("send");
-function add(t,w){let e=document.createElement("div");e.className="msg "+w;e.textContent=t;box.appendChild(e);box.scrollTop=box.scrollHeight}
+const box=document.getElementById("messages");
+const form=document.getElementById("form");
+const input=document.getElementById("input");
+const send=document.getElementById("send");
+
+function add(t,w){
+  const e=document.createElement("div");
+  e.className="msg "+w;
+  e.textContent=t;
+  box.appendChild(e);
+  box.scrollTop=box.scrollHeight;
+}
 add("🤖 Fala, SN7! Manda um comando. Por enquanto: !rank, !wake e !health.","bot");
-form.addEventListener("submit",async e=>{e.preventDefault();let t=input.value.trim();if(!t)return;add(t,"user");input.value="";send.disabled=true;
-try{let r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t})}),d=await r.json();add(d.reply||"⚠️ Sem resposta.","bot")}
-catch(x){add("⚠️ Não consegui falar com o servidor.","bot")}finally{send.disabled=false;input.focus()}});
+
+form.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const t=input.value.trim();
+  if(!t)return;
+  add(t,"user");
+  input.value="";
+  send.disabled=true;
+  try{
+    const r=await fetch("/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:t})
+    });
+    const d=await r.json();
+    add(d.reply||"⚠️ Sem resposta.","bot");
+  }catch(x){
+    add("⚠️ Não consegui falar com o servidor.","bot");
+  }finally{
+    send.disabled=false;
+    input.focus();
+  }
+});
+
+const vv=window.visualViewport;
+let baseHeight=window.innerHeight;
+
+function syncKeyboard(){
+  if(!vv)return;
+  const open=vv.height < baseHeight-120;
+  if(open){
+    document.documentElement.style.setProperty("--chat-height",baseHeight+"px");
+    const gap=Math.max(0,window.innerHeight-(vv.height+vv.offsetTop));
+    document.documentElement.style.setProperty("--keyboard-bottom",gap+"px");
+    document.body.classList.add("keyboard-open");
+  }else{
+    document.body.classList.remove("keyboard-open");
+  }
+}
+window.addEventListener("resize",()=>{
+  if(!document.body.classList.contains("keyboard-open")) baseHeight=window.innerHeight;
+  syncKeyboard();
+});
+if(vv){
+  vv.addEventListener("resize",syncKeyboard);
+  vv.addEventListener("scroll",syncKeyboard);
+}
+input.addEventListener("focus",()=>{
+  setTimeout(syncKeyboard,80);
+  setTimeout(syncKeyboard,250);
+});
+input.addEventListener("blur",()=>setTimeout(syncKeyboard,150));
 </script></body></html>
