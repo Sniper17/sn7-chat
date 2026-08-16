@@ -7,7 +7,7 @@
 .app{height:100vh;height:100dvh;display:flex;flex-direction:column;max-width:900px;margin:auto;min-height:0}
 header{padding:16px 18px;border-bottom:1px solid #262a30;font-size:20px;font-weight:700}
 header small{display:block;font-size:12px;font-weight:400;color:#8d949e;margin-top:4px}
-#messages{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px;padding-bottom:28px}.msg{max-width:85%;padding:11px 14px;margin:8px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
+#messages{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;padding:18px;padding-bottom:28px}.msg{max-width:85%;padding:11px 14px;margin:8px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
 .bot{background:#1b1f25;border:1px solid #292e36}.user{background:#252b34;margin-left:auto}
 .composer{flex:0 0 auto;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #262a30;background:#101216;position:relative;z-index:5}
 input{min-width:0;flex:1;background:#191d22;color:#fff;border:1px solid #333943;border-radius:12px;padding:13px;font-size:16px;outline:none}
@@ -43,97 +43,144 @@ body.keyboard-open #messages{
 <input id="input" autocomplete="off" placeholder="Digite uma pergunta ou comando...">
 <button id="send">➤</button></form></div>
 <script>
-const box=document.getElementById("messages");
-const form=document.getElementById("form");
-const input=document.getElementById("input");
-const send=document.getElementById("send");
-const composer=document.querySelector(".composer");
+const box = document.getElementById("messages");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+const composer = document.querySelector(".composer");
 
-function scrollToBottom(){
-  requestAnimationFrame(()=>{
-    box.scrollTop=box.scrollHeight;
-    setTimeout(()=>{box.scrollTop=box.scrollHeight},80);
+let userIsNearBottom = true;
+let keyboardWasOpen = false;
+
+function isNearBottom() {
+  return box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+}
+
+function scrollToBottom(smooth = true) {
+  box.scrollTo({
+    top: box.scrollHeight,
+    behavior: smooth ? "smooth" : "auto"
   });
 }
 
-function add(t,w){
-  const e=document.createElement("div");
-  e.className="msg "+w;
-  e.textContent=t;
+function addMessage(text, who, forceScroll = false) {
+  const e = document.createElement("div");
+  e.className = "msg " + who;
+  e.textContent = text;
   box.appendChild(e);
-  scrollToBottom();
+
+  // New messages should naturally move the conversation only when the
+  // user was already reading the bottom. Never jump the user's scroll.
+  if (forceScroll || userIsNearBottom) {
+    requestAnimationFrame(() => scrollToBottom(true));
+  }
 }
 
-add("🤖 Fala, SN7! Manda um comando. Por enquanto: !rank, !wake e !health.","bot");
+addMessage(
+  "🤖 Fala, SN7! Manda um comando. Por enquanto: !rank, !wake e !health.",
+  "bot",
+  true
+);
 
-const vv=window.visualViewport;
-let initialViewportHeight=vv ? vv.height : window.innerHeight;
+box.addEventListener("scroll", () => {
+  userIsNearBottom = isNearBottom();
+});
 
-function syncKeyboard(){
-  if(!vv)return;
-  const keyboardHeight=Math.max(0,window.innerHeight-(vv.height+vv.offsetTop));
-  const open=keyboardHeight>120;
+const vv = window.visualViewport;
 
-  if(open){
-    const composerHeight=composer ? composer.offsetHeight : 70;
-    document.documentElement.style.setProperty("--keyboard-height",keyboardHeight+"px");
-    document.documentElement.style.setProperty("--keyboard-bottom",
-      Math.max(0,window.innerHeight-vv.height-vv.offsetTop)+"px");
-    document.documentElement.style.setProperty("--composer-height",composerHeight+"px");
+function syncKeyboard() {
+  if (!vv) return;
+
+  const keyboardHeight = Math.max(
+    0,
+    window.innerHeight - (vv.height + vv.offsetTop)
+  );
+  const open = keyboardHeight > 120;
+
+  if (open) {
+    const composerHeight = composer ? composer.offsetHeight : 70;
+    document.documentElement.style.setProperty(
+      "--keyboard-height",
+      keyboardHeight + "px"
+    );
+    document.documentElement.style.setProperty(
+      "--keyboard-bottom",
+      Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + "px"
+    );
+    document.documentElement.style.setProperty(
+      "--composer-height",
+      composerHeight + "px"
+    );
     document.body.classList.add("keyboard-open");
-  }else{
-    document.documentElement.style.setProperty("--keyboard-height","0px");
-    document.documentElement.style.setProperty("--keyboard-bottom","0px");
+  } else {
+    document.documentElement.style.setProperty("--keyboard-height", "0px");
+    document.documentElement.style.setProperty("--keyboard-bottom", "0px");
     document.body.classList.remove("keyboard-open");
   }
+
+  keyboardWasOpen = open;
 }
 
-if(vv){
-  vv.addEventListener("resize",syncKeyboard);
-  vv.addEventListener("scroll",syncKeyboard);
+if (vv) {
+  vv.addEventListener("resize", syncKeyboard);
+  vv.addEventListener("scroll", syncKeyboard);
 }
 
-input.addEventListener("focus",()=>{
-  setTimeout(syncKeyboard,50);
-  setTimeout(syncKeyboard,200);
-  setTimeout(scrollToBottom,250);
+input.addEventListener("focus", () => {
+  setTimeout(syncKeyboard, 80);
 });
 
-input.addEventListener("blur",()=>{
-  setTimeout(syncKeyboard,150);
+input.addEventListener("blur", () => {
+  setTimeout(syncKeyboard, 150);
 });
 
-form.addEventListener("submit",async e=>{
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const t=input.value.trim();
-  if(!t)return;
 
-  add(t,"user");
-  input.value="";
-  send.disabled=true;
+  const message = input.value.trim();
+  if (!message) return;
 
-  // Keep the keyboard open while the request is running.
-  setTimeout(syncKeyboard,50);
+  // The user intentionally sent this message, so show it immediately.
+  addMessage(message, "user", true);
+  input.value = "";
+  send.disabled = true;
 
-  try{
-    const r=await fetch("/chat",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:t})
+  // IMPORTANT:
+  // Do NOT call input.focus() here. That was the reason the keyboard
+  // reopened automatically after the bot answered.
+  // Let the browser close it naturally when focus is lost.
+
+  // Close the keyboard after sending so the response can be read normally.
+  input.blur();
+
+  try {
+    const r = await fetch("/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message})
     });
-    const d=await r.json();
-    add(d.reply||"⚠️ Sem resposta.","bot");
-  }catch(x){
-    add("⚠️ Não consegui falar com o servidor.","bot");
-  }finally{
-    send.disabled=false;
-    input.focus();
-    setTimeout(syncKeyboard,80);
-    setTimeout(scrollToBottom,120);
+
+    const data = await r.json();
+    addMessage(
+      data.reply || "⚠️ Sem resposta.",
+      "bot",
+      true
+    );
+  } catch (err) {
+    addMessage(
+      "⚠️ Não consegui falar com o servidor.",
+      "bot",
+      true
+    );
+  } finally {
+    send.disabled = false;
+    setTimeout(syncKeyboard, 120);
   }
 });
 
-window.addEventListener("resize",()=>{
-  setTimeout(syncKeyboard,30);
+window.addEventListener("resize", () => {
+  setTimeout(syncKeyboard, 40);
 });
+
+syncKeyboard();
 </script></body></html>
