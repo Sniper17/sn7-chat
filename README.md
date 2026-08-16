@@ -1,21 +1,13 @@
-# SN7 Chat V3.12
+# SN7 Chat V3.13 — health corrigido
 
-Mapeamento correto:
+`!health` não depende mais da rota `/health` da API Central.
 
-WARZONE:
-- !meta ar
-- !meta smg
-- !classe mxr
-- !classe c9
+Agora consulta diretamente os três serviços:
+- Kick
+- RedSec
+- Warzone
 
-`!meta` e `!classe` são o mesmo comando e usam a API Warzone:
-`/meta?tipo=...`
+E retorna um resumo simples de disponibilidade.
 
-REDSEC/BATTLEFIELD:
-- !bf svd
-- !bf m4a1
-
-`!bf` usa a API RedSec:
-`/classe?arma=...`
-
-Warzone mantém wake + retry + fallback pela Central.
+Exemplo:
+`🩺 HEALTH • kick 🟢 • redsec 🟢 • warzone 🟢 • 3/3 online`

@@ -77,7 +77,17 @@ def handle_message(msg):
         return (f"⚡ Serviços acionados: {ok}/3 responderam.", 200)
 
     if low in ("!health", "/health"):
-        return call_api("health")
+        checks = {
+            "kick": call_url(KICK_API, "/"),
+            "redsec": call_url(REDSEC_API, "/"),
+            "warzone": call_url(WARZONE_API, "/"),
+        }
+        ok = sum(1 for _, status in checks.values() if status < 500)
+        details = " • ".join(
+            f"{name} {'🟢' if status < 500 else '🔴'}"
+            for name, (_, status) in checks.items()
+        )
+        return (f"🩺 HEALTH • {details} • {ok}/3 online", 200)
 
     if low in ("!placos", "!pontos"):
         return call_kick("/pontos", {"usuario": "SN7Fps"})
