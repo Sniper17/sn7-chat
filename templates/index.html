@@ -23,7 +23,7 @@ button:disabled{opacity:.5}
 }
 
 body.keyboard-open .app{
-  height:var(--chat-height, 100dvh);
+  height:100dvh;
 }
 body.keyboard-open .composer{
   position:fixed;
@@ -33,7 +33,9 @@ body.keyboard-open .composer{
   width:100%;
 }
 body.keyboard-open #messages{
-  padding-bottom:28px;
+  height:calc(100dvh - var(--composer-height, 70px) - var(--keyboard-height, 0px));
+  flex:0 0 auto;
+  padding-bottom:20px;
 }
 </style></head><body>
 <div class="app"><header>🤖 SN7 Bot<small>Chat particular • Warzone • BF/RedSec • Kick</small></header>
@@ -45,23 +47,74 @@ const box=document.getElementById("messages");
 const form=document.getElementById("form");
 const input=document.getElementById("input");
 const send=document.getElementById("send");
+const composer=document.querySelector(".composer");
+
+function scrollToBottom(){
+  requestAnimationFrame(()=>{
+    box.scrollTop=box.scrollHeight;
+    setTimeout(()=>{box.scrollTop=box.scrollHeight},80);
+  });
+}
 
 function add(t,w){
   const e=document.createElement("div");
   e.className="msg "+w;
   e.textContent=t;
   box.appendChild(e);
-  box.scrollTop=box.scrollHeight;
+  scrollToBottom();
 }
+
 add("🤖 Fala, SN7! Manda um comando. Por enquanto: !rank, !wake e !health.","bot");
+
+const vv=window.visualViewport;
+let initialViewportHeight=vv ? vv.height : window.innerHeight;
+
+function syncKeyboard(){
+  if(!vv)return;
+  const keyboardHeight=Math.max(0,window.innerHeight-(vv.height+vv.offsetTop));
+  const open=keyboardHeight>120;
+
+  if(open){
+    const composerHeight=composer ? composer.offsetHeight : 70;
+    document.documentElement.style.setProperty("--keyboard-height",keyboardHeight+"px");
+    document.documentElement.style.setProperty("--keyboard-bottom",
+      Math.max(0,window.innerHeight-vv.height-vv.offsetTop)+"px");
+    document.documentElement.style.setProperty("--composer-height",composerHeight+"px");
+    document.body.classList.add("keyboard-open");
+  }else{
+    document.documentElement.style.setProperty("--keyboard-height","0px");
+    document.documentElement.style.setProperty("--keyboard-bottom","0px");
+    document.body.classList.remove("keyboard-open");
+  }
+}
+
+if(vv){
+  vv.addEventListener("resize",syncKeyboard);
+  vv.addEventListener("scroll",syncKeyboard);
+}
+
+input.addEventListener("focus",()=>{
+  setTimeout(syncKeyboard,50);
+  setTimeout(syncKeyboard,200);
+  setTimeout(scrollToBottom,250);
+});
+
+input.addEventListener("blur",()=>{
+  setTimeout(syncKeyboard,150);
+});
 
 form.addEventListener("submit",async e=>{
   e.preventDefault();
   const t=input.value.trim();
   if(!t)return;
+
   add(t,"user");
   input.value="";
   send.disabled=true;
+
+  // Keep the keyboard open while the request is running.
+  setTimeout(syncKeyboard,50);
+
   try{
     const r=await fetch("/chat",{
       method:"POST",
@@ -75,35 +128,12 @@ form.addEventListener("submit",async e=>{
   }finally{
     send.disabled=false;
     input.focus();
+    setTimeout(syncKeyboard,80);
+    setTimeout(scrollToBottom,120);
   }
 });
 
-const vv=window.visualViewport;
-let baseHeight=window.innerHeight;
-
-function syncKeyboard(){
-  if(!vv)return;
-  const open=vv.height < baseHeight-120;
-  if(open){
-    document.documentElement.style.setProperty("--chat-height",baseHeight+"px");
-    const gap=Math.max(0,window.innerHeight-(vv.height+vv.offsetTop));
-    document.documentElement.style.setProperty("--keyboard-bottom",gap+"px");
-    document.body.classList.add("keyboard-open");
-  }else{
-    document.body.classList.remove("keyboard-open");
-  }
-}
 window.addEventListener("resize",()=>{
-  if(!document.body.classList.contains("keyboard-open")) baseHeight=window.innerHeight;
-  syncKeyboard();
+  setTimeout(syncKeyboard,30);
 });
-if(vv){
-  vv.addEventListener("resize",syncKeyboard);
-  vv.addEventListener("scroll",syncKeyboard);
-}
-input.addEventListener("focus",()=>{
-  setTimeout(syncKeyboard,80);
-  setTimeout(syncKeyboard,250);
-});
-input.addEventListener("blur",()=>setTimeout(syncKeyboard,150));
 </script></body></html>
