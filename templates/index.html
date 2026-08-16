@@ -3,16 +3,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SN7 Bot</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0d0f12;color:#eee;font-family:Arial,sans-serif;height:100vh}
-.app{height:100vh;display:flex;flex-direction:column;max-width:900px;margin:auto}
+*{box-sizing:border-box}body{margin:0;background:#0d0f12;color:#eee;font-family:Arial,sans-serif;height:100vh;height:100dvh;overflow:hidden}
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;max-width:900px;margin:auto;min-height:0}
 header{padding:16px 18px;border-bottom:1px solid #262a30;font-size:20px;font-weight:700}
 header small{display:block;font-size:12px;font-weight:400;color:#8d949e;margin-top:4px}
-#messages{flex:1;overflow:auto;padding:18px}.msg{max-width:85%;padding:11px 14px;margin:8px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
+#messages{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px;padding-bottom:28px}.msg{max-width:85%;padding:11px 14px;margin:8px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
 .bot{background:#1b1f25;border:1px solid #292e36}.user{background:#252b34;margin-left:auto}
-.composer{display:flex;gap:8px;padding:12px;border-top:1px solid #262a30;background:#101216}
-input{flex:1;background:#191d22;color:#fff;border:1px solid #333943;border-radius:12px;padding:13px;font-size:16px;outline:none}
-button{border:0;border-radius:12px;padding:0 18px;background:#fff;color:#111;font-weight:700}
+.composer{flex:0 0 auto;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #262a30;background:#101216;position:relative;z-index:5}
+input{min-width:0;flex:1;background:#191d22;color:#fff;border:1px solid #333943;border-radius:12px;padding:13px;font-size:16px;outline:none}
+button{flex:0 0 56px;height:48px;border:0;border-radius:12px;padding:0;background:#fff;color:#111;font-weight:700}
 button:disabled{opacity:.5}
+
+@media (max-width:600px){
+  header{flex:0 0 auto;padding:14px 16px}
+  #messages{padding:14px;padding-bottom:20px}
+  .msg{max-width:92%;font-size:16px}
+  .composer{padding-left:10px;padding-right:10px}
+  input{height:48px;font-size:16px}
+}
 </style></head><body>
 <div class="app"><header>🤖 SN7 Bot<small>Chat particular • Warzone • BF/RedSec • Kick</small></header>
 <main id="messages"></main><form class="composer" id="form">
