@@ -72,8 +72,9 @@ def handle_message(msg):
 
     if low in ("!wake", "/wake"):
         results = wake_all_services()
-        ok = sum(1 for _, status in results.values() if status < 400)
-        return (f"⚡ Serviços acionados: {ok}/{len(results)} responderam.", 200)
+        primary = {k:v for k,v in results.items() if k in ("kick","redsec","warzone")}
+        ok = sum(1 for _, status in primary.values() if status < 400)
+        return (f"⚡ Serviços acionados: {ok}/3 responderam.", 200)
 
     if low in ("!health", "/health"):
         return call_api("health")
@@ -147,11 +148,20 @@ def handle_message(msg):
 
     if low.startswith("!classe ") or low.startswith("!meta "):
         tipo = raw.split(maxsplit=1)[1].strip()
+
+        # Try the Warzone service directly first.
         wake_service(WARZONE_API)
         result = call_warzone("/meta", {"tipo": tipo})
+
+        # If the direct route is unavailable/returns an error, use the
+        # Central proxy route that was previously used by the working bot.
         if isinstance(result, tuple) and result[1] >= 400:
             wake_service(WARZONE_API)
             result = call_warzone("/meta", {"tipo": tipo})
+
+        if isinstance(result, tuple) and result[1] >= 400:
+            result = call_api("/warzone/meta", {"tipo": tipo})
+
         return result
 
     return (

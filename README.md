@@ -1,16 +1,9 @@
-# SN7 Chat V3.9 — wake direto
+# SN7 Chat V3.10
 
-Correção específica do chat privado.
+Ajuste do Warzone no chat privado.
 
-O Twitch/Kick continua normal e não é alterado.
-
-No chat privado:
-- `!wake` agora acorda diretamente Kick, RedSec e Warzone;
-- `!bf <arma>` acorda o RedSec antes de consultar `/classe`;
-- `!classe <arma>` e `!meta <tipo>` acordam o Warzone antes de consultar `/meta`;
-- se houver erro após o wake, o chat tenta uma segunda vez.
-
-A API Central fica somente como fallback do `!wake`, não como dependência
-obrigatória para Warzone/RedSec.
-
-Kick continua sendo chamado diretamente.
+- `!bf` continua funcionando diretamente no RedSec.
+- `!classe`/`!meta` tentam Warzone direto, com retry.
+- Se o Warzone direto falhar, o chat tenta `/warzone/meta` pela API Central.
+- `!wake` agora mostra `x/3`, pois são três serviços principais; o fallback
+  da Central não é contado como quarto serviço.
