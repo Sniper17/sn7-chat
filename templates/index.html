@@ -1,1 +1,28 @@
-
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SN7 Bot</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d0f12;color:#eee;font-family:Arial,sans-serif;height:100vh}
+.app{height:100vh;display:flex;flex-direction:column;max-width:900px;margin:auto}
+header{padding:16px 18px;border-bottom:1px solid #262a30;font-size:20px;font-weight:700}
+header small{display:block;font-size:12px;font-weight:400;color:#8d949e;margin-top:4px}
+#messages{flex:1;overflow:auto;padding:18px}.msg{max-width:85%;padding:11px 14px;margin:8px 0;border-radius:14px;white-space:pre-wrap;line-height:1.4}
+.bot{background:#1b1f25;border:1px solid #292e36}.user{background:#252b34;margin-left:auto}
+.composer{display:flex;gap:8px;padding:12px;border-top:1px solid #262a30;background:#101216}
+input{flex:1;background:#191d22;color:#fff;border:1px solid #333943;border-radius:12px;padding:13px;font-size:16px;outline:none}
+button{border:0;border-radius:12px;padding:0 18px;background:#fff;color:#111;font-weight:700}
+button:disabled{opacity:.5}
+</style></head><body>
+<div class="app"><header>🤖 SN7 Bot<small>Chat particular • Warzone • BF/RedSec • Kick</small></header>
+<main id="messages"></main><form class="composer" id="form">
+<input id="input" autocomplete="off" placeholder="Digite uma pergunta ou comando...">
+<button id="send">➤</button></form></div>
+<script>
+const box=document.getElementById("messages"),form=document.getElementById("form"),input=document.getElementById("input"),send=document.getElementById("send");
+function add(t,w){let e=document.createElement("div");e.className="msg "+w;e.textContent=t;box.appendChild(e);box.scrollTop=box.scrollHeight}
+add("🤖 Fala, SN7! Manda um comando. Por enquanto: !rank, !wake e !health.","bot");
+form.addEventListener("submit",async e=>{e.preventDefault();let t=input.value.trim();if(!t)return;add(t,"user");input.value="";send.disabled=true;
+try{let r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:t})}),d=await r.json();add(d.reply||"⚠️ Sem resposta.","bot")}
+catch(x){add("⚠️ Não consegui falar com o servidor.","bot")}finally{send.disabled=false;input.focus()}});
+</script></body></html>
