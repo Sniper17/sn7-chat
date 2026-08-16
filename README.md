@@ -1,28 +1,13 @@
-# SN7 Chat V3 — Completo
+# SN7 Chat V3.1
 
-Chat particular conectado à API Central.
+Correção do chat no Android com teclado aberto.
 
-## Kick / eventos
-- `!rank` -> `/kick/ranking`
-- `!placos` ou `!pontos` -> `/kick/pontos`
-- `!bandido` -> `/kick/bandido`, pistola por padrão
-- `!bandido fuzil` -> equipamento informado
-- `!policia` -> `/kick/policia`, pistola por padrão
-- `!policia fuzil` -> equipamento informado
-- `!c4banco 1000` -> `/kick/c4banco`
-- `!bancores` ou `!resultado` -> `/kick/resultado`
-- `!briga @usuario` -> `/kick/briga`
+Agora:
+- o teclado pode permanecer aberto ao enviar;
+- o campo de mensagem fica acima do teclado;
+- a área da conversa é recalculada para a altura realmente disponível;
+- a nova resposta do bot é rolada para dentro da área visível;
+- a resposta não fica escondida atrás do teclado;
+- as integrações da V3 foram mantidas.
 
-## Jogos
-- `!bf svd` -> RedSec `/classe?arma=svd`
-- `!classe c9` -> Warzone `/meta?tipo=c9`
-- `!meta ar` -> Warzone `/meta?tipo=ar`
-
-## Infra
-- `!wake` -> acorda/verifica Kick, Warzone e RedSec
-- `!health` -> saúde da central
-
-IMPORTANTE:
-A V3 usa `SN7Fps` como usuário padrão no chat particular porque o chat
-ainda não tem autenticação/login. Quando quisermos permitir outros usuários,
-adicionaremos identidade/login.
+Substitua apenas `templates/index.html` no GitHub.
