@@ -39,6 +39,13 @@ def handle_message(msg):
     if low == "!kit":
         return call_api("kick/kit")
 
+    # Latest history
+    if low == "!ultimabriga":
+        return call_api("kick/ultimabriga")
+
+    if low == "!ultimobanco":
+        return call_api("kick/ultimobanco")
+
     # Bank robbery
     if low.startswith("!c4banco"):
         valor = parts[1] if len(parts) > 1 else "1000"
@@ -93,7 +100,7 @@ def handle_message(msg):
 
     return (
         "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
-        "!policia, !c4banco, !bancores, !briga, !bf, !classe, !meta, "
+        "!policia, !c4banco, !bancores, !ultimabriga, !ultimobanco, !briga, !bf, !classe, !meta, "
         "!wake e !health.",
         200
     )

@@ -1,11 +1,8 @@
-# SN7 Chat V3.3
+# SN7 Chat V3.5
 
 Novos comandos:
-- `!reset` ou `!zerar` -> zera pontos, V/D e dados de ranking do SN7Fps.
-- `!kit` -> mostra os equipamentos disponíveis.
+- `!ultimabriga` -> mostra a última briga finalizada.
+- `!ultimobanco` -> mostra o último resultado de banco.
 
-As novas rotas usam diretamente as rotas existentes da API Kick:
-- `/zerar?usuario=SN7Fps`
-- `/kit`
-
-Os demais comandos da V3.2 foram mantidos.
+O histórico fica salvo na API Kick/PostgreSQL, não no navegador. Portanto
+`/limpar` não apaga esse histórico.
