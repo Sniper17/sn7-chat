@@ -1,9 +1,21 @@
-# SN7 Chat V3.10
+# SN7 Chat V3.12
 
-Ajuste do Warzone no chat privado.
+Mapeamento correto:
 
-- `!bf` continua funcionando diretamente no RedSec.
-- `!classe`/`!meta` tentam Warzone direto, com retry.
-- Se o Warzone direto falhar, o chat tenta `/warzone/meta` pela API Central.
-- `!wake` agora mostra `x/3`, pois são três serviços principais; o fallback
-  da Central não é contado como quarto serviço.
+WARZONE:
+- !meta ar
+- !meta smg
+- !classe mxr
+- !classe c9
+
+`!meta` e `!classe` são o mesmo comando e usam a API Warzone:
+`/meta?tipo=...`
+
+REDSEC/BATTLEFIELD:
+- !bf svd
+- !bf m4a1
+
+`!bf` usa a API RedSec:
+`/classe?arma=...`
+
+Warzone mantém wake + retry + fallback pela Central.

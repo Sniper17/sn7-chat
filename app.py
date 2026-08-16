@@ -136,32 +136,27 @@ def handle_message(msg):
             LATEST_BRIGA = result[0]
         return result
 
+    # RedSec / Battlefield: !bf <arma>
     if low.startswith("!bf "):
         arma = raw.split(maxsplit=1)[1].strip()
         wake_service(REDSEC_API)
         result = call_redsec("/classe", {"arma": arma})
-        # One retry after a wake handles a cold-start race.
         if isinstance(result, tuple) and result[1] >= 400:
             wake_service(REDSEC_API)
             result = call_redsec("/classe", {"arma": arma})
         return result
 
-    if low.startswith("!classe ") or low.startswith("!meta "):
-        tipo = raw.split(maxsplit=1)[1].strip()
-
-        # Try the Warzone service directly first.
+    # Warzone: !meta <tipo> and !classe <arma> are the SAME command.
+    # Both use the Warzone /meta endpoint.
+    if low.startswith("!meta ") or low.startswith("!classe "):
+        valor = raw.split(maxsplit=1)[1].strip()
         wake_service(WARZONE_API)
-        result = call_warzone("/meta", {"tipo": tipo})
-
-        # If the direct route is unavailable/returns an error, use the
-        # Central proxy route that was previously used by the working bot.
+        result = call_warzone("/meta", {"tipo": valor})
         if isinstance(result, tuple) and result[1] >= 400:
             wake_service(WARZONE_API)
-            result = call_warzone("/meta", {"tipo": tipo})
-
+            result = call_warzone("/meta", {"tipo": valor})
         if isinstance(result, tuple) and result[1] >= 400:
-            result = call_api("/warzone/meta", {"tipo": tipo})
-
+            result = call_api("/warzone/meta", {"tipo": valor})
         return result
 
     return (
