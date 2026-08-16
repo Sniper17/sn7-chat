@@ -36,6 +36,30 @@ def call_warzone(path, params=None):
 def call_redsec(path, params=None):
     return call_url(REDSEC_API, path, params)
 
+def wake_service(base):
+    try:
+        return call_url(base, "/wake")
+    except Exception as e:
+        return (f"wake error: {e}", 599)
+
+def wake_all_services():
+    # Wake the three Render services directly. This makes the private chat
+    # independent of the central proxy for cold-starting Warzone/RedSec/Kick.
+    results = {
+        "kick": wake_service(KICK_API),
+        "redsec": wake_service(REDSEC_API),
+        "warzone": wake_service(WARZONE_API),
+    }
+    # If the direct wake endpoint is unavailable on any service, keep the
+    # central wake as a fallback rather than breaking the command.
+    if any(status >= 400 for _, status in results.values()):
+        try:
+            central = call_api("/wake")
+            results["central"] = central
+        except Exception as e:
+            results["central"] = (f"central wake error: {e}", 599)
+    return results
+
 def handle_message(msg):
     global LATEST_BRIGA, LATEST_BANCO
 
@@ -47,7 +71,9 @@ def handle_message(msg):
         return call_kick("/ranking")
 
     if low in ("!wake", "/wake"):
-        return call_api("wake")
+        results = wake_all_services()
+        ok = sum(1 for _, status in results.values() if status < 400)
+        return (f"⚡ Serviços acionados: {ok}/{len(results)} responderam.", 200)
 
     if low in ("!health", "/health"):
         return call_api("health")
@@ -111,11 +137,22 @@ def handle_message(msg):
 
     if low.startswith("!bf "):
         arma = raw.split(maxsplit=1)[1].strip()
-        return call_api("/redsec/classe", {"arma": arma})
+        wake_service(REDSEC_API)
+        result = call_redsec("/classe", {"arma": arma})
+        # One retry after a wake handles a cold-start race.
+        if isinstance(result, tuple) and result[1] >= 400:
+            wake_service(REDSEC_API)
+            result = call_redsec("/classe", {"arma": arma})
+        return result
 
     if low.startswith("!classe ") or low.startswith("!meta "):
         tipo = raw.split(maxsplit=1)[1].strip()
-        return call_api("/warzone/meta", {"tipo": tipo})
+        wake_service(WARZONE_API)
+        result = call_warzone("/meta", {"tipo": tipo})
+        if isinstance(result, tuple) and result[1] >= 400:
+            wake_service(WARZONE_API)
+            result = call_warzone("/meta", {"tipo": tipo})
+        return result
 
     return (
         "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
