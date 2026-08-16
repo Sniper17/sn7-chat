@@ -1,18 +1,17 @@
-# SN7 Chat V3.6 — serviços diretos
+# SN7 Chat V3.7
 
-Correção principal: os comandos do chat não passam mais pelas rotas
-`/kick/<rota>`, `/warzone/<rota>` e `/redsec/<rota>` da API Central.
+Correção do histórico.
 
-O chat chama diretamente:
-- Kick: https://kick-duelo-api.onrender.com
-- Warzone: https://warzone-api-qbn9.onrender.com
-- RedSec: https://redsec-loadout-api.onrender.com
+O print mostrou que `/ultimabriga` e `/ultimobanco` não existem no deployment
+atual da API Kick, então o chat não deve depender dessas rotas.
 
-A Central continua sendo usada para:
-- `!wake`
-- `!health`
+Agora:
+- `!briga @usuario` salva a resposta da última briga no próprio chat.
+- `!ultimabriga` recupera essa última briga.
+- `!bancores` / `!resultado` salva o último resultado do banco.
+- `!ultimobanco` recupera esse último resultado.
 
-Isso evita que uma rota ausente no proxy central faça o chat exibir a página
-HTML/SVG 404 do Render.
+Os comandos usam somente rotas Kick que já estavam funcionando.
 
-Também há proteção para não exibir HTML de erro cru no chat.
+Observação: o cache fica na memória do processo do chat. Se o serviço do
+Render reiniciar, o histórico recente é perdido e começa vazio novamente.

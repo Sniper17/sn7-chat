@@ -9,6 +9,10 @@ WARZONE_API = os.getenv("WARZONE_API_URL", "https://warzone-api-qbn9.onrender.co
 REDSEC_API = os.getenv("REDSEC_API_URL", "https://redsec-loadout-api.onrender.com")
 TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "25"))
 
+LATEST_BRIGA = None
+LATEST_BANCO = None
+
+
 def call_url(base, path, params=None):
     r = requests.get(
         base.rstrip("/") + "/" + path.lstrip("/"),
@@ -33,6 +37,8 @@ def call_redsec(path, params=None):
     return call_url(REDSEC_API, path, params)
 
 def handle_message(msg):
+    global LATEST_BRIGA, LATEST_BANCO
+
     raw = msg.strip()
     low = raw.lower()
     parts = raw.split()
@@ -46,36 +52,37 @@ def handle_message(msg):
     if low in ("!health", "/health"):
         return call_api("health")
 
-    # Kick / pontos
     if low in ("!placos", "!pontos"):
         return call_kick("/pontos", {"usuario": "SN7Fps"})
 
-    # Reset individual: resets points, V/D and ranking data for SN7Fps.
-    # This route is not assumed to exist in the central proxy yet, so V3.3
-    # calls the existing Kick API directly.
     if low in ("!reset", "!zerar"):
         return call_kick("/zerar", {"usuario": "SN7Fps"})
 
-    # Equipment list
     if low == "!kit":
         return call_kick("/kit")
 
-    # Latest history
+    # History is kept by this chat instance from commands that already exist.
+    # No new /ultimabriga or /ultimobanco endpoint is required.
     if low == "!ultimabriga":
-        return call_kick("/ultimabriga")
+        if not LATEST_BRIGA:
+            return ("⚔️ Ainda não há uma briga registrada neste chat.", 200)
+        return (LATEST_BRIGA, 200)
 
     if low == "!ultimobanco":
-        return call_kick("/ultimobanco")
+        if not LATEST_BANCO:
+            return ("🏦 Ainda não há um resultado de banco registrado neste chat.", 200)
+        return (LATEST_BANCO, 200)
 
-    # Bank robbery
     if low.startswith("!c4banco"):
         valor = parts[1] if len(parts) > 1 else "1000"
         return call_kick("/c4banco", {"usuario": "SN7Fps", "valor": valor})
 
     if low in ("!bancores", "!resultado"):
-        return call_kick("/resultado")
+        result = call_kick("/resultado")
+        if isinstance(result, tuple) and result[1] < 400:
+            LATEST_BANCO = result[0]
+        return result
 
-    # Police / bandit: pistol is the default.
     if low.startswith("!policia"):
         equipamento = parts[1] if len(parts) > 1 else "pistola"
         return call_kick("/policia", {
@@ -90,17 +97,18 @@ def handle_message(msg):
             "equipamento": equipamento
         })
 
-    # Fight
     if low.startswith("!briga"):
         if len(parts) < 2:
             return ("⚠️ Use: !briga @jogador", 200)
         jogador2 = parts[1].lstrip("@")
-        return call_kick("/briga", {
+        result = call_kick("/briga", {
             "jogador1": "SN7Fps",
             "jogador2": jogador2
         })
+        if isinstance(result, tuple) and result[1] < 400:
+            LATEST_BRIGA = result[0]
+        return result
 
-    # Warzone / RedSec
     if low.startswith("!bf "):
         arma = raw.split(maxsplit=1)[1].strip()
         return call_redsec("/classe", {"arma": arma})
@@ -111,8 +119,8 @@ def handle_message(msg):
 
     return (
         "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
-        "!policia, !c4banco, !bancores, !ultimabriga, !ultimobanco, !briga, !bf, !classe, !meta, "
-        "!wake e !health.",
+        "!policia, !c4banco, !bancores, !ultimabriga, !ultimobanco, "
+        "!briga, !bf, !classe, !meta, !wake e !health.",
         200
     )
 
