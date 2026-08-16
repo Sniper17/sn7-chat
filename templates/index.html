@@ -63,6 +63,11 @@ function scrollToBottom(smooth = true) {
   });
 }
 
+function clearChat(){
+  box.innerHTML = "";
+  addMessage("🤖 Chat limpo. Pronto para a próxima. 😎", "bot", true);
+}
+
 function addMessage(text, who, forceScroll = false) {
   const e = document.createElement("div");
   e.className = "msg " + who;
@@ -138,6 +143,12 @@ form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const message = input.value.trim();
+  if (message.toLowerCase() === "/limpar" || message.toLowerCase() === "!limpar") {
+    input.value = "";
+    clearChat();
+    input.blur();
+    return;
+  }
   if (!message) return;
 
   // The user intentionally sent this message, so show it immediately.
