@@ -25,11 +25,21 @@ def handle_message(msg):
     if low in ("!health", "/health"):
         return call_api("health")
 
-    # Kick / Placos
-    if low == "!placos" or low == "!pontos":
+    # Kick / pontos
+    if low in ("!placos", "!pontos"):
         return call_api("kick/pontos", {"usuario": "SN7Fps"})
 
-    # Bank robbery: start and result
+    # Reset individual: resets points, V/D and ranking data for SN7Fps.
+    # This route is not assumed to exist in the central proxy yet, so V3.3
+    # calls the existing Kick API directly.
+    if low in ("!reset", "!zerar"):
+        return call_api("kick/zerar", {"usuario": "SN7Fps"})
+
+    # Equipment list
+    if low == "!kit":
+        return call_api("kick/kit")
+
+    # Bank robbery
     if low.startswith("!c4banco"):
         valor = parts[1] if len(parts) > 1 else "1000"
         return call_api("kick/c4banco", {"usuario": "SN7Fps", "valor": valor})
@@ -37,7 +47,7 @@ def handle_message(msg):
     if low in ("!bancores", "!resultado"):
         return call_api("kick/resultado")
 
-    # Police and bandit: pistol is the default when no kit is supplied.
+    # Police / bandit: pistol is the default.
     if low.startswith("!policia"):
         equipamento = parts[1] if len(parts) > 1 else "pistola"
         return call_api("kick/policia", {
@@ -52,7 +62,7 @@ def handle_message(msg):
             "equipamento": equipamento
         })
 
-    # Fight: !briga @usuario (or just username)
+    # Fight
     if low.startswith("!briga"):
         if len(parts) < 2:
             return ("⚠️ Use: !briga @jogador", 200)
@@ -82,8 +92,9 @@ def handle_message(msg):
         return r.text, r.status_code
 
     return (
-        "🤖 Comandos: !rank, !placos, !bandido, !policia, !c4banco, "
-        "!bancores, !briga, !bf, !classe, !meta, !wake e !health.",
+        "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
+        "!policia, !c4banco, !bancores, !briga, !bf, !classe, !meta, "
+        "!wake e !health.",
         200
     )
 
