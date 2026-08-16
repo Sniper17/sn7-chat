@@ -1,16 +1,9 @@
-# SN7 Chat V2.1
+# SN7 Chat V2.2
 
-Chat particular conectado à API Central.
+Correção do teclado no Android:
+- o campo acompanha o teclado;
+- a conversa mantém sua posição;
+- a resposta do bot não sobe junto com o campo;
+- ao fechar o teclado, o layout volta ao normal.
 
-Comandos:
-- `!rank` -> Kick `/ranking`
-- `!bf svd` -> RedSec `/classe?arma=svd`
-- `!classe c9` -> Warzone `/meta?tipo=c9`
-- `!meta ar` -> mesma rota Warzone `/meta?tipo=ar`
-- `!wake` -> aquece/verifica as três APIs
-- `!health` -> saúde da central
-
-No StreamElements, `!classe` e `!meta` são nomes secundários do mesmo comando,
-por isso o chat trata ambos como a mesma rota da API Warzone.
-
-V2.1: corrigido layout mobile com `100dvh`, área de mensagens flexível e campo de envio sempre visível acima da barra do navegador.
+As integrações da V2.1 foram mantidas.
