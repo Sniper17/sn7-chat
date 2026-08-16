@@ -19,17 +19,29 @@ def handle_message(msg):
         return call_api("wake")
     if low in ("!health", "/health"):
         return call_api("health")
+
     if low.startswith("!bf "):
-        return ("🎮 O chat já está pronto para o BF/RedSec. "
-                "Só precisamos ligar a rota exata do seu !bf atual.", 200)
-    if low.startswith("!classe "):
-        return ("🔫 O chat já está pronto para classes. "
-                "Só precisamos ligar a rota exata do seu !classe atual.", 200)
-    if low.startswith("!meta"):
-        return ("🔥 O chat já está pronto para a meta. "
-                "Só precisamos ligar a rota atual da Warzone.", 200)
-    return ("🤖 Por enquanto: !rank, !wake e !health. "
-            "Na próxima etapa ligamos !bf, !classe e !meta.", 200)
+        arma = msg.split(maxsplit=1)[1].strip()
+        r = requests.get(
+            CENTRAL_API.rstrip("/") + "/redsec/classe",
+            params={"arma": arma},
+            timeout=TIMEOUT,
+        )
+        return r.text, r.status_code
+
+    # StreamElements treats !classe and !meta as secondary names for the
+    # same command, so both intentionally use the same Warzone route.
+    if low.startswith("!classe ") or low.startswith("!meta "):
+        tipo = msg.split(maxsplit=1)[1].strip()
+        r = requests.get(
+            CENTRAL_API.rstrip("/") + "/warzone/meta",
+            params={"tipo": tipo},
+            timeout=TIMEOUT,
+        )
+        return r.text, r.status_code
+
+    return ("🤖 Comandos: !rank, !bf <arma>, !classe <tipo>, !meta <tipo>, "
+            "!wake e !health.", 200)
 
 @app.get("/")
 def home():
