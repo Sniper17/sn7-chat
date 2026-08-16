@@ -1,17 +1,20 @@
-# SN7 Chat V3.7
+# SN7 Chat V3.8
 
-Correção do histórico.
+Correção do Warzone e RedSec.
 
-O print mostrou que `/ultimabriga` e `/ultimobanco` não existem no deployment
-atual da API Kick, então o chat não deve depender dessas rotas.
+O V3.7 chamou diretamente:
+- Warzone `/meta`
+- RedSec `/classe`
 
-Agora:
-- `!briga @usuario` salva a resposta da última briga no próprio chat.
-- `!ultimabriga` recupera essa última briga.
-- `!bancores` / `!resultado` salva o último resultado do banco.
-- `!ultimobanco` recupera esse último resultado.
+O print mostrou que esses caminhos estão retornando 404 HTML quando chamados
+diretamente pelo chat.
 
-Os comandos usam somente rotas Kick que já estavam funcionando.
+V3.8 volta a usar a API Central para essas duas integrações, nos caminhos que
+já foram validados no projeto:
+- `/warzone/meta?tipo=...`
+- `/redsec/classe?arma=...`
 
-Observação: o cache fica na memória do processo do chat. Se o serviço do
-Render reiniciar, o histórico recente é perdido e começa vazio novamente.
+Kick continua sendo chamado diretamente pela `kick-duelo-api`.
+
+Também há proteção para qualquer resposta HTML/SVG de erro não aparecer como
+código no chat.

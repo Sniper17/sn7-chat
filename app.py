@@ -111,11 +111,11 @@ def handle_message(msg):
 
     if low.startswith("!bf "):
         arma = raw.split(maxsplit=1)[1].strip()
-        return call_redsec("/classe", {"arma": arma})
+        return call_api("/redsec/classe", {"arma": arma})
 
     if low.startswith("!classe ") or low.startswith("!meta "):
         tipo = raw.split(maxsplit=1)[1].strip()
-        return call_warzone("/meta", {"tipo": tipo})
+        return call_api("/warzone/meta", {"tipo": tipo})
 
     return (
         "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
@@ -140,16 +140,13 @@ def chat():
         return jsonify({"ok": False, "reply": "Digite alguma coisa. 😎"}), 400
     try:
         reply, status = handle_message(msg)
-        if isinstance(reply, str) and "<svg" in reply.lower():
-            return jsonify({
-                "ok": False,
-                "reply": "⚠️ O serviço respondeu com uma página de erro. Tente novamente em alguns segundos."
-            })
-        if isinstance(reply, str) and "<!doctype html" in reply.lower() and "render" in reply.lower():
-            return jsonify({
-                "ok": False,
-                "reply": "⚠️ O serviço ainda não respondeu corretamente. Tente novamente em alguns segundos."
-            })
+        if isinstance(reply, str):
+            lower_reply = reply.lower()
+            if "<!doctype html" in lower_reply or "<html" in lower_reply or "<svg" in lower_reply:
+                return jsonify({
+                    "ok": False,
+                    "reply": "⚠️ O serviço respondeu com uma página de erro. Tente novamente em alguns segundos."
+                })
         return jsonify({"ok": status < 400, "reply": reply})
     except requests.RequestException:
         return jsonify({"ok": False, "reply":
