@@ -4,12 +4,33 @@ from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 CENTRAL_API = os.getenv("CENTRAL_API_URL", "https://api-central-sn7.onrender.com")
+KICK_API = os.getenv("KICK_API_URL", "https://kick-duelo-api.onrender.com")
+WARZONE_API = os.getenv("WARZONE_API_URL", "https://warzone-api-qbn9.onrender.com")
+REDSEC_API = os.getenv("REDSEC_API_URL", "https://redsec-loadout-api.onrender.com")
 TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "25"))
 
-def call_api(path, params=None):
-    r = requests.get(CENTRAL_API.rstrip("/") + "/" + path.lstrip("/"),
-                     params=params or {}, timeout=TIMEOUT)
+def call_url(base, path, params=None):
+    r = requests.get(
+        base.rstrip("/") + "/" + path.lstrip("/"),
+        params=params or {},
+        timeout=TIMEOUT
+    )
     return r.text, r.status_code
+
+def call_api(path, params=None):
+    # Central-only routes.
+    return call_url(CENTRAL_API, path, params)
+
+def call_kick(path, params=None):
+    # Kick routes are called directly. This avoids the central proxy returning
+    # its Render 404 HTML for a route it does not currently expose.
+    return call_url(KICK_API, path, params)
+
+def call_warzone(path, params=None):
+    return call_url(WARZONE_API, path, params)
+
+def call_redsec(path, params=None):
+    return call_url(REDSEC_API, path, params)
 
 def handle_message(msg):
     raw = msg.strip()
@@ -17,7 +38,7 @@ def handle_message(msg):
     parts = raw.split()
 
     if low == "!rank":
-        return call_api("kick/ranking")
+        return call_kick("/ranking")
 
     if low in ("!wake", "/wake"):
         return call_api("wake")
@@ -27,44 +48,44 @@ def handle_message(msg):
 
     # Kick / pontos
     if low in ("!placos", "!pontos"):
-        return call_api("kick/pontos", {"usuario": "SN7Fps"})
+        return call_kick("/pontos", {"usuario": "SN7Fps"})
 
     # Reset individual: resets points, V/D and ranking data for SN7Fps.
     # This route is not assumed to exist in the central proxy yet, so V3.3
     # calls the existing Kick API directly.
     if low in ("!reset", "!zerar"):
-        return call_api("kick/zerar", {"usuario": "SN7Fps"})
+        return call_kick("/zerar", {"usuario": "SN7Fps"})
 
     # Equipment list
     if low == "!kit":
-        return call_api("kick/kit")
+        return call_kick("/kit")
 
     # Latest history
     if low == "!ultimabriga":
-        return call_api("kick/ultimabriga")
+        return call_kick("/ultimabriga")
 
     if low == "!ultimobanco":
-        return call_api("kick/ultimobanco")
+        return call_kick("/ultimobanco")
 
     # Bank robbery
     if low.startswith("!c4banco"):
         valor = parts[1] if len(parts) > 1 else "1000"
-        return call_api("kick/c4banco", {"usuario": "SN7Fps", "valor": valor})
+        return call_kick("/c4banco", {"usuario": "SN7Fps", "valor": valor})
 
     if low in ("!bancores", "!resultado"):
-        return call_api("kick/resultado")
+        return call_kick("/resultado")
 
     # Police / bandit: pistol is the default.
     if low.startswith("!policia"):
         equipamento = parts[1] if len(parts) > 1 else "pistola"
-        return call_api("kick/policia", {
+        return call_kick("/policia", {
             "usuario": "SN7Fps",
             "equipamento": equipamento
         })
 
     if low.startswith("!bandido"):
         equipamento = parts[1] if len(parts) > 1 else "pistola"
-        return call_api("kick/bandido", {
+        return call_kick("/bandido", {
             "usuario": "SN7Fps",
             "equipamento": equipamento
         })
@@ -74,7 +95,7 @@ def handle_message(msg):
         if len(parts) < 2:
             return ("⚠️ Use: !briga @jogador", 200)
         jogador2 = parts[1].lstrip("@")
-        return call_api("kick/briga", {
+        return call_kick("/briga", {
             "jogador1": "SN7Fps",
             "jogador2": jogador2
         })
@@ -82,21 +103,11 @@ def handle_message(msg):
     # Warzone / RedSec
     if low.startswith("!bf "):
         arma = raw.split(maxsplit=1)[1].strip()
-        r = requests.get(
-            CENTRAL_API.rstrip("/") + "/redsec/classe",
-            params={"arma": arma},
-            timeout=TIMEOUT,
-        )
-        return r.text, r.status_code
+        return call_redsec("/classe", {"arma": arma})
 
     if low.startswith("!classe ") or low.startswith("!meta "):
         tipo = raw.split(maxsplit=1)[1].strip()
-        r = requests.get(
-            CENTRAL_API.rstrip("/") + "/warzone/meta",
-            params={"tipo": tipo},
-            timeout=TIMEOUT,
-        )
-        return r.text, r.status_code
+        return call_warzone("/meta", {"tipo": tipo})
 
     return (
         "🤖 Comandos: !rank, !placos, !reset, !zerar, !kit, !bandido, "
@@ -121,6 +132,16 @@ def chat():
         return jsonify({"ok": False, "reply": "Digite alguma coisa. 😎"}), 400
     try:
         reply, status = handle_message(msg)
+        if isinstance(reply, str) and "<svg" in reply.lower():
+            return jsonify({
+                "ok": False,
+                "reply": "⚠️ O serviço respondeu com uma página de erro. Tente novamente em alguns segundos."
+            })
+        if isinstance(reply, str) and "<!doctype html" in reply.lower() and "render" in reply.lower():
+            return jsonify({
+                "ok": False,
+                "reply": "⚠️ O serviço ainda não respondeu corretamente. Tente novamente em alguns segundos."
+            })
         return jsonify({"ok": status < 400, "reply": reply})
     except requests.RequestException:
         return jsonify({"ok": False, "reply":
