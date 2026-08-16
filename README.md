@@ -1,4 +1,4 @@
-# SN7 Chat V2
+# SN7 Chat V2.1
 
 Chat particular conectado à API Central.
 
@@ -12,3 +12,5 @@ Comandos:
 
 No StreamElements, `!classe` e `!meta` são nomes secundários do mesmo comando,
 por isso o chat trata ambos como a mesma rota da API Warzone.
+
+V2.1: corrigido layout mobile com `100dvh`, área de mensagens flexível e campo de envio sempre visível acima da barra do navegador.
