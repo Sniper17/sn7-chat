@@ -134,6 +134,25 @@ def handle_message(msg):
             "equipamento": equipamento
         })
 
+    if low.startswith("!batalha"):
+        if len(parts) < 2:
+            return ("⚔️ Use: !batalha @jogador", 200)
+        jogador2 = parts[1].lstrip("@")
+        wake_service(KICK_API)
+        result = call_kick("/duelo", {
+            "jogador1": "SN7Fps",
+            "jogador2": jogador2
+        })
+        # Cold-start retry. The /duelo endpoint updates the points/ranking
+        # through the Kick API; the private chat only displays its result.
+        if isinstance(result, tuple) and result[1] >= 400:
+            wake_service(KICK_API)
+            result = call_kick("/duelo", {
+                "jogador1": "SN7Fps",
+                "jogador2": jogador2
+            })
+        return result
+
     if low.startswith("!briga"):
         if len(parts) < 2:
             return ("⚠️ Use: !briga @jogador", 200)

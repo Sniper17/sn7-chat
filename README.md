@@ -1,13 +1,19 @@
-# SN7 Chat V3.13 — health corrigido
+# SN7 Chat V3.14 — !batalha
 
-`!health` não depende mais da rota `/health` da API Central.
+Adicionado o comando privado:
 
-Agora consulta diretamente os três serviços:
-- Kick
-- RedSec
-- Warzone
+`!batalha @jogador`
 
-E retorna um resumo simples de disponibilidade.
+Ele chama diretamente a API Kick:
+`/duelo?jogador1=SN7Fps&jogador2=<alvo>`
 
-Exemplo:
-`🩺 HEALTH • kick 🟢 • redsec 🟢 • warzone 🟢 • 3/3 online`
+A API Kick continua responsável por aplicar o resultado do duelo e atualizar
+os pontos/V-D usados no ranking. O chat apenas exibe a resposta.
+
+Há wake + retry para lidar com cold start do Render.
+
+No StreamElements, a sintaxe correta para a Twitch é:
+`$(customapi https://kick-duelo-api.onrender.com/duelo?jogador1=$(sender)&jogador2=$(queryescape ${1:}))`
+
+A documentação atual do StreamElements confirma que `${1:}` é válido dentro
+de `$(queryescape)` e que `$(customapi)` faz GET com timeout de 15 segundos.
