@@ -1,0 +1,39 @@
+# --- SN7 Core integration ---------------------------------------------------
+from core_client import get_balance as core_get_balance, get_settings as core_get_settings
+
+def core_command_reply(message, username):
+    parts = message.strip().split()
+    if not parts:
+        return None
+
+    cmd = parts[0].lower()
+    configured = None
+
+    try:
+        settings_data = core_get_settings()
+        configured = settings_data.get("settings") or {}
+    except Exception as exc:
+        app.logger.warning("SN7 Core settings unavailable: %s", exc)
+
+    currency_command = str(configured.get("currency_command", "!placos")).lower()
+    aliases = {"!placo", currency_command}
+
+    if cmd not in aliases:
+        return None
+
+    try:
+        data = core_get_balance(username)
+        if not data.get("ok"):
+            return "⚠️ Não consegui consultar seus pontos no SN7 Core."
+
+        currency = data.get("currency") or configured.get("currency_name") or "Placos"
+        emoji = data.get("emoji") or configured.get("currency_emoji") or "🪙"
+        points = data.get("points", 0)
+        rank = data.get("rank", 1)
+
+        return f"{emoji} {username}, você tem {points} {currency}. 🏆 Sua posição no ranking é #{rank}."
+    except Exception as exc:
+        app.logger.warning("SN7 Core balance unavailable: %s", exc)
+        return "⚠️ SN7 Core está indisponível no momento."
+
+# --- SN7 Core integration ---------------------------------------------------
