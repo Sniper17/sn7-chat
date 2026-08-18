@@ -144,8 +144,10 @@ def handle_message(message, username="SN7Fps"):
         return f"❌ O comando {name} não existe.", 404
 
     if command == "!cmds":
-        commands = custom_list()
-        return (("📋 Comandos personalizados: " + ", ".join(commands)) if commands else "📋 Ainda não há comandos personalizados."), 200
+        # Lista todos os comandos que podem ser usados com !, incluindo aliases
+        # e comandos personalizados criados pelo administrador.
+        commands = sorted(set(NATIVE_COMMANDS) | set(custom_list()))
+        return "📋 COMANDOS • " + " ".join(commands), 200
 
     custom = custom_get(command)
     if custom is not None:
@@ -211,6 +213,13 @@ def handle_message(message, username="SN7Fps"):
     if command in {"!ajuda", "!comandos", "!help"}:
         return "🤖 !rank !placos !addplaco !setplaco !kit !c4banco !policia !bandido !banco !bancores !briga !batalha !bf !classe !meta !xdoce !wake !health !add cmd !edit cmd !del cmd !cmds", 200
     return "❓ Comando não encontrado. Use !comandos.", 200
+
+
+# Wrapper compatível com versões anteriores do SN7 Chat.
+# Mantém suporte a chamadas com ou sem username.
+def handle_message_with_aliases(message, username="SN7Fps"):
+    return handle_message(message, username)
+
 
 
 NATIVE_COMMANDS = {
@@ -283,11 +292,11 @@ def home():
 
 @app.get("/api")
 def api_info():
-    return jsonify({"ok": True, "service": "SN7 Chat", "version": "2.1-mobile-chat", "commands": sorted(NATIVE_COMMANDS)})
+    return jsonify({"ok": True, "service": "SN7 Chat", "version": "2.2-mobile-chat", "commands": sorted(NATIVE_COMMANDS)})
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "service": "sn7-chat", "version": "2.1-mobile-chat"})
+    return jsonify({"ok": True, "service": "sn7-chat", "version": "2.2-mobile-chat"})
 
 @app.post("/chat")
 def chat():
@@ -295,7 +304,7 @@ def chat():
     message = str(data.get("message", "")).strip()
     username = str(data.get("username", "SN7Fps")).strip() or "SN7Fps"
     try:
-        reply, status = handle_message(message, username)
+        reply, status = handle_message_with_aliases(message, username)
         return jsonify({"ok": status < 400, "reply": reply, "status": status}), 200
     except requests.RequestException as exc:
         app.logger.warning("API request error: %s", exc)
