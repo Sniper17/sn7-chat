@@ -1,3 +1,12 @@
-# SN7 Chat
+# SN7 Chat v2.1
 
-Chat privado de teste com os comandos nativos do bot SN7 e suporte a comandos personalizados.
+Interface de chat restaurada e melhorada para celular.
+
+- Caixa de mensagem fixa e separada do histórico.
+- Ajuste automático para teclado virtual usando Visual Viewport.
+- Área de mensagens com espaço reservado para não ficar atrás do compositor.
+- Enter envia; Shift+Enter quebra linha.
+- Não usa autofocus, evitando abrir o teclado sozinho.
+- Mantém `/chat`, `/health` e os comandos do SN7 Chat.
+
+Start command no Render: `gunicorn app:app`
