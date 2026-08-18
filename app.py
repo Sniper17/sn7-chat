@@ -6,7 +6,9 @@ app = Flask(__name__)
 
 WORKER_COMMAND_URL = os.getenv("WORKER_COMMAND_URL", "https://sn7-kick-worker.onrender.com/command").strip().rstrip("/")
 WORKER_COMMAND_KEY = os.getenv("WORKER_COMMAND_KEY", "").strip()
-TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "180"))
+TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "30"))
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "2"))
+POLL_TIMEOUT = float(os.getenv("POLL_TIMEOUT", "190"))
 # Origem deste painel: comandos enviados aqui são privados e nunca devem
 # ser tratados como mensagens públicas da live. O Worker pode usar estes
 # campos para impedir qualquer resposta/broadcast para o Kick.
@@ -43,7 +45,8 @@ function scrollBottom(){requestAnimationFrame(()=>chat.scrollTo({top:chat.scroll
 function addMessage(text,who){if(empty)empty.remove();const row=document.createElement('div');row.className='msg '+who;const w=document.createElement('div');const meta=document.createElement('div');meta.className='meta';meta.textContent=who==='user'?'Você':'';const b=document.createElement('div');b.className='bubble';b.textContent=text;w.append(meta,b);row.append(w);chat.append(row);scrollBottom();return row}
 function addLoading(){if(empty)empty.remove();const row=document.createElement('div');row.className='msg bot';const w=document.createElement('div');const b=document.createElement('div');b.className='bubble';b.innerHTML='<span class="loading"><i></i><i></i><i></i></span>';w.append(b);row.append(w);chat.append(row);scrollBottom();return row}
 function resizeInput(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,112)+'px'}input.addEventListener('input',resizeInput);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
-form.addEventListener('submit',async e=>{e.preventDefault();if(busy)return;const message=input.value.trim();if(!message)return;addMessage(message,'user');input.value='';resizeInput();busy=true;send.disabled=true;const loading=addLoading();try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,username:'SN7Fps',source:'private',channel:'private',delivery:'private_only'})});const data=await r.json();loading.remove();addMessage(data.reply||'⚠️ Sem resposta.','bot')}catch(err){loading.remove();addMessage('⚠️ Não foi possível conectar ao Baguncinha.','bot')}finally{busy=false;send.disabled=false;input.focus({preventScroll:true});scrollBottom()}});
+async function pollJob(jobId){const deadline=Date.now()+190*1000;while(Date.now()<deadline){await new Promise(r=>setTimeout(r,2*1000));const r=await fetch('/chat/status/'+encodeURIComponent(jobId),{cache:'no-store'});const data=await r.json();if(data.state==='done'||data.state==='error'||data.status===404)return data;}throw new Error('timeout')}
+form.addEventListener('submit',async e=>{e.preventDefault();if(busy)return;const message=input.value.trim();if(!message)return;addMessage(message,'user');input.value='';resizeInput();busy=true;send.disabled=true;const loading=addLoading();try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,username:'SN7Fps',source:'private',channel:'private',delivery:'private_only'})});const data=await r.json();let finalData=data;if(data.job_id)finalData=await pollJob(data.job_id);loading.remove();addMessage(finalData.reply||'⚠️ Sem resposta.','bot')}catch(err){loading.remove();addMessage('⚠️ O comando demorou demais ou o Worker ficou indisponível.','bot')}finally{busy=false;send.disabled=false;input.focus({preventScroll:true});scrollBottom()}});
 function keyboardSafe(){const vv=window.visualViewport;if(!vv)return;const overlap=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);wrap.style.bottom=overlap+'px';document.documentElement.style.setProperty('--composer',(wrap.offsetHeight+overlap)+'px');if(document.activeElement===input)setTimeout(scrollBottom,60)}if(window.visualViewport){visualViewport.addEventListener('resize',keyboardSafe);visualViewport.addEventListener('scroll',keyboardSafe)}window.addEventListener('resize',keyboardSafe);window.addEventListener('load',()=>{keyboardSafe();resizeInput()});
 </script></body></html>'''
 
@@ -126,6 +129,8 @@ def chat():
         )
         try:data=r.json()
         except Exception:data={"reply":r.text.strip()}
+        if data.get("job_id"):
+            return jsonify({"ok":True,"status":202,"job_id":data.get("job_id"),"reply":"⏳ Processando..."}),200
         reply=str(data.get("reply") or "⚠️ O Worker não retornou resposta.")
         return jsonify({"ok":bool(data.get("ok",r.status_code<400)),"reply":reply,"status":int(data.get("status",r.status_code))}),200
     except requests.RequestException as exc:
@@ -134,6 +139,22 @@ def chat():
     except Exception as exc:
         app.logger.exception("Chat error: %s",exc)
         return jsonify({"ok":False,"reply":"⚠️ Ocorreu um erro no Baguncinha.","status":500}),200
+
+
+@app.get("/chat/status/<job_id>")
+def chat_status(job_id):
+    if not WORKER_COMMAND_KEY:
+        return jsonify({"ok":False,"state":"error","reply":"⚠️ Worker não configurado.","status":500}),200
+    broadcaster_id=os.getenv("BROADCASTER_USER_ID","").strip()
+    headers={"X-Worker-Key":WORKER_COMMAND_KEY,"Accept":"application/json","X-Broadcaster-User-ID":broadcaster_id}
+    try:
+        r=requests.get(WORKER_COMMAND_URL+"/status/"+job_id,headers=headers,timeout=15)
+        try:data=r.json()
+        except Exception:data={"state":"error","reply":"⚠️ Resposta inválida do Worker."}
+        return jsonify(data),200
+    except requests.RequestException as exc:
+        app.logger.warning("Worker status error: %s",exc)
+        return jsonify({"ok":False,"state":"running","status":202}),200
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=int(os.getenv("PORT","10000")))
