@@ -34,3 +34,17 @@ Variáveis esperadas:
 - `BROADCASTER_USER_ID`
 - opcional: `REQUEST_TIMEOUT` (padrão 180)
 - opcional: `COMMAND_SOURCE` (padrão `private`)
+
+
+## v3.2 — listas privadas sem depender da live
+
+`!cmds` e `!cmdp` são resolvidos pelo próprio painel:
+
+- `!cmds` mostra somente comandos públicos.
+- `!cmdp` mostra somente comandos personalizados.
+- `!cmds` não mostra `!cmds`, comandos administrativos ou comandos de ação.
+- `!cmdp` não aparece dentro de `!cmds`.
+- `!policia` e `!bandido` ficam fora das listas, pois só devem ser anunciados durante a ação.
+- Nenhum desses comandos gera mensagem na Kick.
+
+Para os demais comandos, o painel continua usando o mesmo SN7 Kick Worker da live, enviando `source=private`, `channel=private` e `delivery=private_only`. O `BROADCASTER_USER_ID` configurado no Render é enviado também no header `X-Broadcaster-User-ID`, permitindo ao Worker resolver a live correta sem importar mensagens do chat público.

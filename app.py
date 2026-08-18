@@ -59,6 +59,25 @@ def api_info():
 def health():
     return jsonify({"ok": True, "service": "baguncinha", "worker_configured": bool(WORKER_COMMAND_URL and WORKER_COMMAND_KEY), "version": "3.1-private-isolated", "command_source": COMMAND_SOURCE})
 
+
+PUBLIC_COMMANDS = [
+    "!placos", "!placo", "!rank", "!ranking", "!top",
+    "!meta", "!bf", "!classe", "!kit", "!banco", "!bancores",
+]
+PERSONAL_COMMANDS = ["!xdoce"]
+# Commands that are only shown while an action is active are intentionally
+# omitted from !cmds. The action itself announces them when appropriate.
+ACTION_COMMANDS = ["!policia", "!bandido"]
+
+def local_command_reply(message: str):
+    """Handle command-list commands locally so they never depend on live detection."""
+    cmd = message.strip().split()[0].lower() if message.strip() else ""
+    if cmd in ("!cmds", "!comandos"):
+        return "🤖 📋 Públicos: " + ", ".join(PUBLIC_COMMANDS)
+    if cmd == "!cmdp":
+        return "🤖 🛠️ Personalizados: " + ", ".join(PERSONAL_COMMANDS)
+    return None
+
 @app.post("/chat")
 def chat():
     data=request.get_json(silent=True) or {}
@@ -66,11 +85,42 @@ def chat():
     username=str(data.get("username", "SN7Fps")).strip() or "SN7Fps"
     if not message:
         return jsonify({"ok": False, "reply": "Digite um comando.", "status": 400}), 200
+
+    # !cmds and !cmdp are intentionally resolved here. They are informational
+    # lists and must work in the private panel even when the Worker cannot
+    # resolve a public live context. They never publish anything to Kick.
+    local_reply = local_command_reply(message)
+    if local_reply is not None:
+        return jsonify({"ok": True, "reply": local_reply, "status": 200}), 200
+
     if not WORKER_COMMAND_KEY:
         app.logger.error("WORKER_COMMAND_KEY não configurada")
         return jsonify({"ok": False, "reply": "⚠️ Worker não configurado no Baguncinha.", "status": 500}), 200
     try:
-        r=requests.post(WORKER_COMMAND_URL,headers={"X-Worker-Key":WORKER_COMMAND_KEY,"X-Command-Source":COMMAND_SOURCE,"X-Command-Channel":"private","X-Command-Delivery":"private_only","Content-Type":"application/json","Accept":"application/json"},json={"message":message,"username":username,"broadcaster_user_id":os.getenv("BROADCASTER_USER_ID","").strip(),"source":COMMAND_SOURCE,"channel":"private","delivery":"private_only","reply_only":True},timeout=TIMEOUT)
+        broadcaster_id = os.getenv("BROADCASTER_USER_ID", "").strip()
+        headers = {
+            "X-Worker-Key": WORKER_COMMAND_KEY,
+            "X-Command-Source": COMMAND_SOURCE,
+            "X-Command-Channel": "private",
+            "X-Command-Delivery": "private_only",
+            "X-Broadcaster-User-ID": broadcaster_id,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        r=requests.post(
+            WORKER_COMMAND_URL,
+            headers=headers,
+            json={
+                "message": message,
+                "username": username,
+                "broadcaster_user_id": broadcaster_id,
+                "source": COMMAND_SOURCE,
+                "channel": "private",
+                "delivery": "private_only",
+                "reply_only": True,
+            },
+            timeout=TIMEOUT
+        )
         try:data=r.json()
         except Exception:data={"reply":r.text.strip()}
         reply=str(data.get("reply") or "⚠️ O Worker não retornou resposta.")
