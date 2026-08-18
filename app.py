@@ -7,6 +7,10 @@ app = Flask(__name__)
 WORKER_COMMAND_URL = os.getenv("WORKER_COMMAND_URL", "https://sn7-kick-worker.onrender.com/command").strip().rstrip("/")
 WORKER_COMMAND_KEY = os.getenv("WORKER_COMMAND_KEY", "").strip()
 TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "180"))
+# Origem deste painel: comandos enviados aqui são privados e nunca devem
+# ser tratados como mensagens públicas da live. O Worker pode usar estes
+# campos para impedir qualquer resposta/broadcast para o Kick.
+COMMAND_SOURCE = os.getenv("COMMAND_SOURCE", "private").strip() or "private"
 
 CHAT_HTML = r'''<!doctype html>
 <html lang="pt-BR">
@@ -39,7 +43,7 @@ function scrollBottom(){requestAnimationFrame(()=>chat.scrollTo({top:chat.scroll
 function addMessage(text,who){if(empty)empty.remove();const row=document.createElement('div');row.className='msg '+who;const w=document.createElement('div');const meta=document.createElement('div');meta.className='meta';meta.textContent=who==='user'?'Você':'';const b=document.createElement('div');b.className='bubble';b.textContent=text;w.append(meta,b);row.append(w);chat.append(row);scrollBottom();return row}
 function addLoading(){if(empty)empty.remove();const row=document.createElement('div');row.className='msg bot';const w=document.createElement('div');const b=document.createElement('div');b.className='bubble';b.innerHTML='<span class="loading"><i></i><i></i><i></i></span>';w.append(b);row.append(w);chat.append(row);scrollBottom();return row}
 function resizeInput(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight,112)+'px'}input.addEventListener('input',resizeInput);input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
-form.addEventListener('submit',async e=>{e.preventDefault();if(busy)return;const message=input.value.trim();if(!message)return;addMessage(message,'user');input.value='';resizeInput();busy=true;send.disabled=true;const loading=addLoading();try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,username:'SN7Fps'})});const data=await r.json();loading.remove();addMessage(data.reply||'⚠️ Sem resposta.','bot')}catch(err){loading.remove();addMessage('⚠️ Não foi possível conectar ao Baguncinha.','bot')}finally{busy=false;send.disabled=false;input.focus({preventScroll:true});scrollBottom()}});
+form.addEventListener('submit',async e=>{e.preventDefault();if(busy)return;const message=input.value.trim();if(!message)return;addMessage(message,'user');input.value='';resizeInput();busy=true;send.disabled=true;const loading=addLoading();try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,username:'SN7Fps',source:'private',channel:'private',delivery:'private_only'})});const data=await r.json();loading.remove();addMessage(data.reply||'⚠️ Sem resposta.','bot')}catch(err){loading.remove();addMessage('⚠️ Não foi possível conectar ao Baguncinha.','bot')}finally{busy=false;send.disabled=false;input.focus({preventScroll:true});scrollBottom()}});
 function keyboardSafe(){const vv=window.visualViewport;if(!vv)return;const overlap=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);wrap.style.bottom=overlap+'px';document.documentElement.style.setProperty('--composer',(wrap.offsetHeight+overlap)+'px');if(document.activeElement===input)setTimeout(scrollBottom,60)}if(window.visualViewport){visualViewport.addEventListener('resize',keyboardSafe);visualViewport.addEventListener('scroll',keyboardSafe)}window.addEventListener('resize',keyboardSafe);window.addEventListener('load',()=>{keyboardSafe();resizeInput()});
 </script></body></html>'''
 
@@ -49,11 +53,11 @@ def home():
 
 @app.get("/api")
 def api_info():
-    return jsonify({"ok": True, "service": "Baguncinha", "version": "3.0-worker", "worker_command_url": WORKER_COMMAND_URL})
+    return jsonify({"ok": True, "service": "Baguncinha", "version": "3.1-private-isolated", "command_source": COMMAND_SOURCE, "worker_command_url": WORKER_COMMAND_URL})
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "service": "baguncinha", "worker_configured": bool(WORKER_COMMAND_URL and WORKER_COMMAND_KEY), "version": "3.0-worker"})
+    return jsonify({"ok": True, "service": "baguncinha", "worker_configured": bool(WORKER_COMMAND_URL and WORKER_COMMAND_KEY), "version": "3.1-private-isolated", "command_source": COMMAND_SOURCE})
 
 @app.post("/chat")
 def chat():
@@ -66,7 +70,7 @@ def chat():
         app.logger.error("WORKER_COMMAND_KEY não configurada")
         return jsonify({"ok": False, "reply": "⚠️ Worker não configurado no Baguncinha.", "status": 500}), 200
     try:
-        r=requests.post(WORKER_COMMAND_URL,headers={"X-Worker-Key":WORKER_COMMAND_KEY,"Content-Type":"application/json","Accept":"application/json"},json={"message":message,"username":username,"broadcaster_user_id":os.getenv("BROADCASTER_USER_ID","").strip()},timeout=TIMEOUT)
+        r=requests.post(WORKER_COMMAND_URL,headers={"X-Worker-Key":WORKER_COMMAND_KEY,"X-Command-Source":COMMAND_SOURCE,"X-Command-Channel":"private","X-Command-Delivery":"private_only","Content-Type":"application/json","Accept":"application/json"},json={"message":message,"username":username,"broadcaster_user_id":os.getenv("BROADCASTER_USER_ID","").strip(),"source":COMMAND_SOURCE,"channel":"private","delivery":"private_only","reply_only":True},timeout=TIMEOUT)
         try:data=r.json()
         except Exception:data={"reply":r.text.strip()}
         reply=str(data.get("reply") or "⚠️ O Worker não retornou resposta.")
