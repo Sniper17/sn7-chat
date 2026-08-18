@@ -29,13 +29,13 @@ body{overscroll-behavior:none}.app{height:100dvh;height:100svh;display:flex;flex
 .chat{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px 13px calc(var(--composer) + 22px + env(safe-area-inset-bottom));scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 .empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:30px}.empty b{display:block;color:var(--text);font-size:22px;margin-bottom:7px}.empty p{margin:0;line-height:1.5;font-size:13px}
 .msg{display:flex;margin:0 0 12px;max-width:92%;animation:in .16s ease-out}.msg.user{margin-left:auto;justify-content:flex-end}.bubble{border:1px solid var(--line);border-radius:17px;padding:10px 13px;line-height:1.4;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 5px 20px rgba(0,0,0,.12)}.bot .bubble{background:var(--bot);border-top-left-radius:6px}.user .bubble{background:var(--user);border-top-right-radius:6px}.meta{font-size:10px;color:var(--muted);margin:0 5px 4px}.user .meta{text-align:right}.bot .meta{display:none}
-.composer-wrap{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(8,9,13,.99) 70%,rgba(8,9,13,.72),transparent)}.composer{display:flex;align-items:flex-end;gap:8px;max-width:820px;margin:auto;background:rgba(21,23,32,.98);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:7px 7px 7px 14px;box-shadow:0 12px 35px rgba(0,0,0,.35)}
-.input{flex:1;min-width:0;max-height:112px;resize:none;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:15px;line-height:21px;padding:7px 0;overflow-y:auto}.input::placeholder{color:#737988}.send{width:42px;height:42px;flex:0 0 42px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:18px;font-weight:800;display:grid;place-items:center}.send:disabled{opacity:.45}.hint{text-align:center;color:#555b69;font-size:10px;padding-top:6px}.loading{display:inline-flex;gap:4px;align-items:center}.loading i{width:5px;height:5px;border-radius:50%;background:#9ca3af;animation:b 1s infinite}.loading i:nth-child(2){animation-delay:.15s}.loading i:nth-child(3){animation-delay:.3s}@keyframes b{0%,70%,100%{opacity:.25;transform:translateY(0)}35%{opacity:1;transform:translateY(-3px)}}@keyframes in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.composer-wrap{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(8,9,13,.99) 70%,rgba(8,9,13,.72),transparent)}.composer{display:flex;align-items:center;gap:8px;max-width:820px;margin:auto;background:rgba(21,23,32,.98);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:7px 7px 7px 14px;box-shadow:0 12px 35px rgba(0,0,0,.35)}
+.input{flex:1;min-width:0;max-height:112px;resize:none;align-self:center;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:15px;line-height:21px;padding:7px 0;overflow-y:auto}.input::placeholder{color:#737988}.send{width:42px;height:42px;flex:0 0 42px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:18px;font-weight:800;display:grid;place-items:center}.send:disabled{opacity:.45}.hint{text-align:center;color:#555b69;font-size:10px;padding-top:6px}.loading{display:inline-flex;gap:4px;align-items:center}.loading i{width:5px;height:5px;border-radius:50%;background:#9ca3af;animation:b 1s infinite}.loading i:nth-child(2){animation-delay:.15s}.loading i:nth-child(3){animation-delay:.3s}@keyframes b{0%,70%,100%{opacity:.25;transform:translateY(0)}35%{opacity:1;transform:translateY(-3px)}}@keyframes in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @media(min-width:700px){.chat{padding-left:max(18px,calc((100vw - 820px)/2));padding-right:max(18px,calc((100vw - 820px)/2))}.composer-wrap{padding-left:18px;padding-right:18px}.header{padding-left:max(18px,calc((100vw - 820px)/2));padding-right:max(18px,calc((100vw - 820px)/2))}}
 </style></head>
 <body><div class="app">
 <header class="header"><div class="logo">B</div><div><div class="title">Baguncinha</div><div class="subtitle">Ambiente privado de testes</div></div><div class="status"><span class="dot"></span> online</div></header>
-<main id="chat" class="chat"><div id="empty" class="empty"><div><b>👋 Baguncinha</b><p>Digite um comando abaixo para testar.<br>Ex.: <strong>!placos</strong>, <strong>!rank</strong> ou <strong>!meta mxr</strong></p></div></div></main>
+<main id="chat" class="chat"><div id="empty" class="empty"><div><p>Digite <strong>!cmda</strong> para ver os comandos de ADM.<br>Digite <strong>!cmds</strong> para ver os comandos públicos.<br>Digite <strong>!cmdp</strong> para ver os comandos personalizados.</p></div></div></main>
 <div id="composerWrap" class="composer-wrap"><form id="form" class="composer"><textarea id="input" class="input" rows="1" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" enterkeyhint="send" placeholder="Digite uma mensagem..."></textarea><button id="send" class="send" type="submit" aria-label="Enviar">➤</button></form><div class="hint">Enter envia • Shift+Enter quebra linha</div></div></div>
 <script>
 const chat=document.getElementById('chat'),empty=document.getElementById('empty'),form=document.getElementById('form'),input=document.getElementById('input'),send=document.getElementById('send'),wrap=document.getElementById('composerWrap');let busy=false;
@@ -53,11 +53,11 @@ def home():
 
 @app.get("/api")
 def api_info():
-    return jsonify({"ok": True, "service": "Baguncinha", "version": "3.1-private-isolated", "command_source": COMMAND_SOURCE, "worker_command_url": WORKER_COMMAND_URL})
+    return jsonify({"ok": True, "service": "Baguncinha", "version": "3.3-private-command-lists", "command_source": COMMAND_SOURCE, "worker_command_url": WORKER_COMMAND_URL})
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "service": "baguncinha", "worker_configured": bool(WORKER_COMMAND_URL and WORKER_COMMAND_KEY), "version": "3.1-private-isolated", "command_source": COMMAND_SOURCE})
+    return jsonify({"ok": True, "service": "baguncinha", "worker_configured": bool(WORKER_COMMAND_URL and WORKER_COMMAND_KEY), "version": "3.3-private-command-lists", "command_source": COMMAND_SOURCE})
 
 
 PUBLIC_COMMANDS = [
@@ -65,6 +65,7 @@ PUBLIC_COMMANDS = [
     "!meta", "!bf", "!classe", "!kit", "!banco", "!bancores",
 ]
 PERSONAL_COMMANDS = ["!xdoce"]
+ADMIN_COMMANDS = ["!addplaco", "!addpoints", "!setplaco", "!setpoints", "!faliu", "!add cmd", "!edit cmd", "!del cmd"]
 # Commands that are only shown while an action is active are intentionally
 # omitted from !cmds. The action itself announces them when appropriate.
 ACTION_COMMANDS = ["!policia", "!bandido"]
@@ -76,6 +77,8 @@ def local_command_reply(message: str):
         return "🤖 📋 Públicos: " + ", ".join(PUBLIC_COMMANDS)
     if cmd == "!cmdp":
         return "🤖 🛠️ Personalizados: " + ", ".join(PERSONAL_COMMANDS)
+    if cmd == "!cmda":
+        return "🔐 👑 ADM: " + ", ".join(ADMIN_COMMANDS)
     return None
 
 @app.post("/chat")
